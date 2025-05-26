@@ -26,7 +26,7 @@ namespace XAL
                     directories.Add(node.Value);
                 }
 
-                foreach (var node in  doc.XPathSelectElements("/Settings/LaunchOptions/Option"))
+                foreach (var node in doc.XPathSelectElements("/Settings/LaunchOptions/Option"))
                 {
                     launchOptions[node.Attribute("Folder").Value] = node.Value;
                 }
@@ -80,11 +80,11 @@ namespace XAL
                             storeLogo = doc.XPathSelectElement("/Game/ShellVisuals")?.Attribute("StoreLogo")?.Value;
                             displayName = doc.XPathSelectElement("/Game/ShellVisuals")?.Attribute("DefaultDisplayName")?.Value;
                         }
-                        
+
                         var manifestPath = Path.Combine(subDir, "Content", "appxmanifest.xml");
                         if ((string.IsNullOrEmpty(exeName) || string.IsNullOrEmpty(storeLogo)) && File.Exists(manifestPath))
                         {
-                            
+
                             var doc = XDocument.Load(manifestPath);
                             var namespaceManager = new XmlNamespaceManager(new NameTable());
                             namespaceManager.AddNamespace("ns", "http://schemas.microsoft.com/appx/manifest/foundation/windows10");
@@ -92,14 +92,18 @@ namespace XAL
                             exeName = doc.XPathSelectElement("/ns:Package/ns:Applications/ns:Application", namespaceManager)?.Attribute("Executable")?.Value;
                             storeLogo = doc.XPathSelectElement("/ns:Package/ns:Properties/ns:Logo", namespaceManager)?.Value;
                         }
-                        
-                        if(string.IsNullOrEmpty(exeName) || string.IsNullOrEmpty(displayName)) continue;
+
+                        if (string.IsNullOrEmpty(exeName) || string.IsNullOrEmpty(displayName)) continue;
                         Label nameLabel = new()
                         {
-                            AutoSize = true,
+                            AutoSize = false,
+                            Width = 400,
+                            Height = 30,
                             Text = displayName,
+                            //BorderStyle = BorderStyle.FixedSingle,
+
                         };
-                        
+
                         var currentDir = Path.Combine(subDir, "Content");
                         var logoPath = Path.Combine(currentDir, storeLogo);
                         PictureBox? pictureBoxA = null;
@@ -112,12 +116,14 @@ namespace XAL
                                 Image = Image.FromFile(logoPath),
                             };
                         }
-                        Button startButton = new ()
+                        Button startButton = new()
                         {
-                            Text = "启动"
+                            Text = "启动",
+                            Height = 40,
+                            Dock = DockStyle.Bottom
                         };
                         var exePath = Path.Combine(currentDir, exeName);
-                        if(File.Exists(exePath) is false) continue;
+                        if (File.Exists(exePath) is false) continue;
                         startButton.Click += (s, e) =>
                         {
                             string arguments = launchOptions.ContainsKey(subDir) ? launchOptions[subDir] : "";
@@ -131,13 +137,18 @@ namespace XAL
 
                         Button settingsButton = new Button();
                         settingsButton.Text = "设置";
+                        settingsButton.Dock = DockStyle.Bottom;
+                        settingsButton.Height = 40;
                         settingsButton.Click += (s, e) =>
                         {
                             Form settingsForm = new Form
                             {
                                 Text = $"设置 {displayName}",
-                                Width = 300,
-                                Height = 150
+                                Width = 900,
+                                Height = 450,
+                                StartPosition = FormStartPosition.CenterScreen,
+                                MaximizeBox = false
+
                             };
                             TextBox textBox = new TextBox
                             {
@@ -147,6 +158,8 @@ namespace XAL
                             Button saveButton = new Button
                             {
                                 Text = "保存",
+                                Width = 100,
+                                Height = 50,
                                 Dock = DockStyle.Bottom
                             };
                             saveButton.Click += (ss, ee) =>
@@ -169,7 +182,7 @@ namespace XAL
                             BackColor = Color.LightGray,
                             Margin = new Padding(5)
                         };
-                        if(pictureBoxA is not null)  panel.Controls.Add(pictureBoxA);
+                        if (pictureBoxA is not null) panel.Controls.Add(pictureBoxA);
                         panel.Controls.Add(nameLabel);
                         panel.Controls.Add(startButton);
                         panel.Controls.Add(settingsButton);
@@ -196,6 +209,21 @@ namespace XAL
         }
 
         private void pictureBox1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void flowLayoutPanel1_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void Form1_Load_1(object sender, EventArgs e)
         {
 
         }
