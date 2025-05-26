@@ -122,7 +122,7 @@ namespace XAL
                             Height = 40,
                             Dock = DockStyle.Bottom
                         };
-                        var exePath = Path.Combine(currentDir, exeName);
+                        var exePath = Path.Combine(currentDir, "gamelaunchhelper.exe");
                         if (File.Exists(exePath) is false) continue;
                         startButton.Click += (s, e) =>
                         {
