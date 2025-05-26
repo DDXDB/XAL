@@ -1,16 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Windows.Forms;
 using System.Xml;
+using System.Xml.Linq;
+using System.Xml.XPath;
 
 namespace XAL
 {
     public partial class Form1 : Form
     {
-        private List<string> directories = new List<string>();
-        private Dictionary<string, string> launchOptions = new Dictionary<string, string>();
+        private List<string> directories = new();
+        private Dictionary<string, string> launchOptions = new();
 
         public Form1()
         {
@@ -23,25 +20,22 @@ namespace XAL
         {
             if (File.Exists("settings.xml"))
             {
-                XmlDocument doc = new XmlDocument();
-                doc.Load("settings.xml");
-                XmlNodeList dirNodes = doc.SelectNodes("/Settings/Directories/Directory");
-                foreach (XmlNode node in dirNodes)
+                XDocument doc = XDocument.Load("settings.xml");
+                foreach (var node in doc.XPathSelectElements("/Settings/Directories/Directory"))
                 {
-                    directories.Add(node.InnerText);
+                    directories.Add(node.Value);
                 }
 
-                XmlNodeList optionNodes = doc.SelectNodes("/Settings/LaunchOptions/Option");
-                foreach (XmlNode node in optionNodes)
+                foreach (var node in  doc.XPathSelectElements("/Settings/LaunchOptions/Option"))
                 {
-                    launchOptions[node.Attributes["Folder"].Value] = node.InnerText;
+                    launchOptions[node.Attribute("Folder").Value] = node.Value;
                 }
             }
         }
 
         private void SaveSettings()
         {
-            XmlDocument doc = new XmlDocument();
+            var doc = new XmlDocument();
             XmlElement root = doc.CreateElement("Settings");
             doc.AppendChild(root);
 
@@ -70,45 +64,66 @@ namespace XAL
         private void UpdateUI()
         {
             flowLayoutPanel1.Controls.Clear();
-            foreach (string dir in directories)
+            foreach (var dir in directories)
             {
-                string[] subDirs = Directory.GetDirectories(dir);
-                foreach (string subDir in subDirs)
+                var subDirs = Directory.GetDirectories(dir);
+                foreach (var subDir in subDirs)
                 {
-
                     try
                     {
-
-
-                        XmlDocument doc = new XmlDocument();
-                        doc.Load(Path.Combine(subDir, "Content", "appxmanifest.xml"));
-                        XmlNode displayNameNode = doc.SelectSingleNode("/Package/Applications/Application/DisplayName");
-                        string nameA = displayNameNode?.InnerText ?? Path.GetFileName(subDir);
-
-                        Label nameLabel = new Label();
-                        nameLabel.AutoSize = true;
-                        nameLabel.Text = nameA;
-                        doc.Load(Path.Combine(subDir, "Content", "appxmanifest.xml"));
-                        XmlNode logoNode = doc.SelectSingleNode("/Package/Applications/Application/Logo");
-                        string logoA = logoNode?.InnerText ?? Path.GetFileName(subDir);
-                        PictureBox pictureBoxA = new PictureBox();
-                        pictureBoxA.Size = new System.Drawing.Size(100, 100);
-                        pictureBoxA.SizeMode = PictureBoxSizeMode.Zoom;
-                        logoA = logoA.Replace("\\", "/");
-                        string logoPath = Path.Combine(subDir, "Content", logoA);
-                        if (File.Exists(logoPath))
+                        string? exeName = "", storeLogo = "", displayName = "";
+                        var gameConfigPath = Path.Combine(subDir, "Content", "MicrosoftGame.config");
+                        if (File.Exists(gameConfigPath))
                         {
-                            pictureBoxA.Image = Image.FromFile(logoPath);
+                            var doc = XDocument.Load(Path.Combine(subDir, "Content", "MicrosoftGame.config"));
+                            exeName = doc.XPathSelectElement("/Game/ExecutableList/Executable")?.Attribute("Name")?.Value;
+                            storeLogo = doc.XPathSelectElement("/Game/ShellVisuals")?.Attribute("StoreLogo")?.Value;
+                            displayName = doc.XPathSelectElement("/Game/ShellVisuals")?.Attribute("DefaultDisplayName")?.Value;
                         }
-                        Button startButton = new Button();
-                        startButton.Text = "启动";
+                        
+                        var manifestPath = Path.Combine(subDir, "Content", "appxmanifest.xml");
+                        if ((string.IsNullOrEmpty(exeName) || string.IsNullOrEmpty(storeLogo)) && File.Exists(manifestPath))
+                        {
+                            
+                            var doc = XDocument.Load(manifestPath);
+                            var namespaceManager = new XmlNamespaceManager(new NameTable());
+                            namespaceManager.AddNamespace("ns", "http://schemas.microsoft.com/appx/manifest/foundation/windows10");
+                            displayName = doc.XPathSelectElement("/ns:Package/ns:Properties/ns:DisplayName", namespaceManager)?.Value;
+                            exeName = doc.XPathSelectElement("/ns:Package/ns:Applications/ns:Application", namespaceManager)?.Attribute("Executable")?.Value;
+                            storeLogo = doc.XPathSelectElement("/ns:Package/ns:Properties/ns:Logo", namespaceManager)?.Value;
+                        }
+                        
+                        if(string.IsNullOrEmpty(exeName) || string.IsNullOrEmpty(displayName)) continue;
+                        Label nameLabel = new()
+                        {
+                            AutoSize = true,
+                            Text = displayName,
+                        };
+                        
+                        var currentDir = Path.Combine(subDir, "Content");
+                        var logoPath = Path.Combine(currentDir, storeLogo);
+                        PictureBox? pictureBoxA = null;
+                        if (string.IsNullOrEmpty(storeLogo) is false && File.Exists(logoPath))
+                        {
+                            pictureBoxA = new PictureBox
+                            {
+                                SizeMode = PictureBoxSizeMode.Zoom,
+                                Size = new Size(100, 100),
+                                Image = Image.FromFile(logoPath),
+                            };
+                        }
+                        Button startButton = new ()
+                        {
+                            Text = "启动"
+                        };
+                        var exePath = Path.Combine(currentDir, exeName);
+                        if(File.Exists(exePath) is false) continue;
                         startButton.Click += (s, e) =>
                         {
-                            string launchPath = Path.Combine(subDir, "Content", "gamelaunchhelper.exe");
                             string arguments = launchOptions.ContainsKey(subDir) ? launchOptions[subDir] : "";
                             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                             {
-                                FileName = launchPath,
+                                FileName = exePath,
                                 Arguments = arguments,
                                 UseShellExecute = true
                             });
@@ -120,7 +135,7 @@ namespace XAL
                         {
                             Form settingsForm = new Form
                             {
-                                Text = $"设置 {nameA}",
+                                Text = $"设置 {displayName}",
                                 Width = 300,
                                 Height = 150
                             };
@@ -147,14 +162,14 @@ namespace XAL
                             settingsForm.ShowDialog();
                         };
 
-                        FlowLayoutPanel panel = new FlowLayoutPanel
+                        var panel = new FlowLayoutPanel
                         {
                             Dock = DockStyle.Top,
                             AutoSize = true,
-                            BackColor = System.Drawing.Color.LightGray,
+                            BackColor = Color.LightGray,
                             Margin = new Padding(5)
                         };
-                        panel.Controls.Add(pictureBoxA);
+                        if(pictureBoxA is not null)  panel.Controls.Add(pictureBoxA);
                         panel.Controls.Add(nameLabel);
                         panel.Controls.Add(startButton);
                         panel.Controls.Add(settingsButton);
@@ -171,19 +186,13 @@ namespace XAL
 
         private void btnAddDirectory_Click(object sender, EventArgs e)
         {
-            using (FolderBrowserDialog fbd = new FolderBrowserDialog())
-            {
-                if (fbd.ShowDialog() == DialogResult.OK)
-                {
-                    string selectedPath = fbd.SelectedPath;
-                    if (!directories.Contains(selectedPath))
-                    {
-                        directories.Add(selectedPath);
-                        SaveSettings();
-                        UpdateUI();
-                    }
-                }
-            }
+            using var fbd = new FolderBrowserDialog();
+            if (fbd.ShowDialog() != DialogResult.OK) return;
+            var selectedPath = fbd.SelectedPath;
+            if (directories.Contains(selectedPath)) return;
+            directories.Add(selectedPath);
+            SaveSettings();
+            UpdateUI();
         }
 
         private void pictureBox1_Click(object sender, EventArgs e)
