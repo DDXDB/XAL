@@ -61,6 +61,7 @@
             Controls.Add(flowLayoutPanel1);
             Controls.Add(btnAddDirectory);
             Controls.Add(pictureBox1);
+            MaximizeBox = false;
             Name = "Form1";
             Load += Form1_Load_1;
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
