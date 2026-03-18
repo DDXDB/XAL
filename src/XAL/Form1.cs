@@ -1,6 +1,8 @@
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
+using System.Drawing;
+using System.Windows.Forms;
 
 namespace XAL
 {
@@ -94,14 +96,19 @@ namespace XAL
                         }
 
                         if (string.IsNullOrEmpty(exeName) || string.IsNullOrEmpty(displayName)) continue;
+
+                        // 现代化UI - 使用更简洁的控件和样式
                         Label nameLabel = new()
                         {
                             AutoSize = false,
                             Width = 400,
-                            Height = 30,
+                            Height = 40,
                             Text = displayName,
-                            //BorderStyle = BorderStyle.FixedSingle,
-
+                            Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                            ForeColor = Color.FromArgb(32, 32, 32),
+                            BackColor = Color.White,
+                            Padding = new Padding(10, 0, 0, 0),
+                            TextAlign = ContentAlignment.MiddleLeft
                         };
 
                         var currentDir = Path.Combine(subDir, "Content");
@@ -112,16 +119,27 @@ namespace XAL
                             pictureBoxA = new PictureBox
                             {
                                 SizeMode = PictureBoxSizeMode.Zoom,
-                                Size = new Size(100, 100),
+                                Size = new Size(80, 80),
                                 Image = Image.FromFile(logoPath),
+                                Margin = new Padding(10, 5, 10, 5),
+                                BackColor = Color.White
                             };
                         }
+
+                        // 启动按钮 - Windows 11风格
                         Button startButton = new()
                         {
                             Text = "启动",
                             Height = 40,
-                            Dock = DockStyle.Bottom
+                            Width = 100,
+                            BackColor = Color.FromArgb(0, 120, 215),
+                            ForeColor = Color.White,
+                            Font = new Font("Segoe UI", 9),
+                            FlatStyle = FlatStyle.Flat,
+                            FlatAppearance = { BorderSize = 0 },
+                            Margin = new Padding(5, 0, 5, 0)
                         };
+
                         var exePath = Path.Combine(currentDir, "gamelaunchhelper.exe");
                         if (File.Exists(exePath) is false) continue;
                         startButton.Click += (s, e) =>
@@ -135,10 +153,18 @@ namespace XAL
                             });
                         };
 
+                        // 设置按钮 - Windows 11风格
                         Button settingsButton = new Button();
                         settingsButton.Text = "设置";
-                        settingsButton.Dock = DockStyle.Bottom;
                         settingsButton.Height = 40;
+                        settingsButton.Width = 100;
+                        settingsButton.BackColor = Color.FromArgb(243, 243, 243);
+                        settingsButton.ForeColor = Color.FromArgb(32, 32, 32);
+                        settingsButton.Font = new Font("Segoe UI", 9);
+                        settingsButton.FlatStyle = FlatStyle.Flat;
+                        settingsButton.FlatAppearance.BorderSize = 0;
+                        settingsButton.Margin = new Padding(5, 0, 5, 0);
+
                         settingsButton.Click += (s, e) =>
                         {
                             Form settingsForm = new Form
@@ -147,20 +173,28 @@ namespace XAL
                                 Width = 900,
                                 Height = 450,
                                 StartPosition = FormStartPosition.CenterScreen,
-                                MaximizeBox = false
-
+                                MaximizeBox = false,
+                                BackColor = Color.White,
+                                FormBorderStyle = FormBorderStyle.FixedSingle
                             };
                             TextBox textBox = new TextBox
                             {
                                 Dock = DockStyle.Top,
-                                Text = launchOptions.ContainsKey(subDir) ? launchOptions[subDir] : ""
+                                Text = launchOptions.ContainsKey(subDir) ? launchOptions[subDir] : "",
+                                Font = new Font("Segoe UI", 10),
+                                Margin = new Padding(20, 20, 20, 0)
                             };
                             Button saveButton = new Button
                             {
                                 Text = "保存",
                                 Width = 100,
                                 Height = 50,
-                                Dock = DockStyle.Bottom
+                                Dock = DockStyle.Bottom,
+                                BackColor = Color.FromArgb(0, 120, 215),
+                                ForeColor = Color.White,
+                                Font = new Font("Segoe UI", 10),
+                                FlatStyle = FlatStyle.Flat,
+                                FlatAppearance = { BorderSize = 0 }
                             };
                             saveButton.Click += (ss, ee) =>
                             {
@@ -175,13 +209,19 @@ namespace XAL
                             settingsForm.ShowDialog();
                         };
 
+                        // 创建卡片式面板
                         var panel = new FlowLayoutPanel
                         {
                             Dock = DockStyle.Top,
                             AutoSize = true,
-                            BackColor = Color.LightGray,
-                            Margin = new Padding(5)
+                            BackColor = Color.White,
+                            Margin = new Padding(10),
+                            Padding = new Padding(0),
+                            FlowDirection = FlowDirection.LeftToRight,
+                            WrapContents = false
                         };
+
+                        // 添加控件到面板中
                         if (pictureBoxA is not null) panel.Controls.Add(pictureBoxA);
                         panel.Controls.Add(nameLabel);
                         panel.Controls.Add(startButton);
@@ -228,5 +268,4 @@ namespace XAL
 
         }
     }
-
 }
