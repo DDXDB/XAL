@@ -1,4 +1,57 @@
-**/.idea
-**/bin
-**/obj
-**/.vs
+
+# IDEs and editors
+.vscode/
+.idea/
+.vs/
+
+# Build outputs
+**/bin/
+**/obj/
+**/publish/
+
+# Package managers
+node_modules/
+*.nupkg
+.nuget/
+
+# User-specific files
+*.user
+*.userosscache
+*.suo
+
+# Logs and reports
+*.log
+coverage/
+*.lcov
+
+# Environment and secrets
+# Add patterns for local env files, credentials, and common secret file names
+.env
+.env.*
+*.secret
+secrets.json
+credentials.json
+appsettings.*.json
+.aws/credentials
+
+# Certificates and private keys
+*.pfx
+*.p12
+*.key
+*.pem
+
+# Databases
+*.db
+*.sqlite
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Misc
+.history
+.cache
+
+# If you need to keep a specific file that matches an ignore rule, explicitly track it with:
+# git add -f path/to/file
+

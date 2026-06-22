@@ -11,11 +11,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          fetch-depth: 1
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -23,12 +27,12 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Restore
-        run: dotnet restore ./src/XAL/XAL.sln
+        run: dotnet restore ./src/XAL/XAL.sln --verbosity minimal
 
       - name: Publish (framework-dependent)
         env:
           DOTNET_CLI_TELEMETRY_OPTOUT: '1'
-        run: dotnet publish ./src/XAL/XAL.csproj -c Release -o ./publish --self-contained false
+        run: dotnet publish ./src/XAL/XAL.csproj -c Release -o ./publish --self-contained false --no-restore -v minimal
 
       - name: Upload publish folder
         uses: actions/upload-artifact@v4
