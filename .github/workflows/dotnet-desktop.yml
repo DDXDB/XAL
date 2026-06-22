@@ -12,11 +12,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
       - name: Setup .NET 9
         uses: actions/setup-dotnet@v4
         with:
@@ -28,17 +23,8 @@ jobs:
         run: |
           dotnet publish ./src/XAL/XAL.csproj -c Release -r win-x64 /p:PublishSingleFile=true /p:EnableCompressionInSingleFile=true /p:PublishTrimmed=false /p:PublishReadyToRun=false -o ./publish
 
-      - name: Rename artifact to include runtime info
-        shell: pwsh
-        run: |
-          $exe = Get-ChildItem -Path ./publish -Filter '*.exe' -Recurse | Select-Object -First 1
-          if (-not $exe) { Write-Error 'No exe found in publish output'; exit 1 }
-          $destName = "XAL-win-x64-framework-dependent.exe"
-          Copy-Item -Path $exe.FullName -Destination "./publish/$destName" -Force
-          Write-Output "artifact=./publish/$destName" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-
       - name: Upload EXE
         uses: actions/upload-artifact@v4
         with:
-          name: XAL-win-x64-framework-dependent
-          path: ./publish/XAL-win-x64-framework-dependent.exe
+          name: XAL-exe
+          path: ./publish/*.exe
