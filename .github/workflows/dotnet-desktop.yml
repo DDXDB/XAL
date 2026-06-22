@@ -17,11 +17,11 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      - name: Publish single-file EXE (framework-dependent, win-x64) with compression
+      - name: Publish single-file EXE (framework-dependent, win-x64) with compression and trimming
         env:
           DOTNET_CLI_TELEMETRY_OPTOUT: '1'
         run: |
-          dotnet publish ./src/XAL/XAL.csproj -c Release -r win-x64 /p:PublishSingleFile=true /p:EnableCompressionInSingleFile=true /p:PublishTrimmed=false /p:PublishReadyToRun=false -o ./publish
+          dotnet publish ./src/XAL/XAL.csproj -c Release -r win-x64 /p:PublishSingleFile=true /p:EnableCompressionInSingleFile=true /p:PublishTrimmed=true /p:TrimMode=link /p:PublishReadyToRun=false -o ./publish
 
       - name: Upload EXE
         uses: actions/upload-artifact@v4
