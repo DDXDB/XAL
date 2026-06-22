@@ -30,7 +30,11 @@ namespace XAL
 
                 foreach (var node in doc.XPathSelectElements("/Settings/LaunchOptions/Option"))
                 {
-                    launchOptions[node.Attribute("Folder").Value] = node.Value;
+                    var folderAttr = node.Attribute("Folder")?.Value;
+                    if (!string.IsNullOrEmpty(folderAttr))
+                    {
+                        launchOptions[folderAttr] = node.Value ?? string.Empty;
+                    }
                 }
             }
         }
@@ -112,18 +116,21 @@ namespace XAL
                         };
 
                         var currentDir = Path.Combine(subDir, "Content");
-                        var logoPath = Path.Combine(currentDir, storeLogo);
                         PictureBox? pictureBoxA = null;
-                        if (string.IsNullOrEmpty(storeLogo) is false && File.Exists(logoPath))
+                        if (!string.IsNullOrEmpty(storeLogo))
                         {
-                            pictureBoxA = new PictureBox
+                            var logoPath = Path.Combine(currentDir, storeLogo);
+                            if (File.Exists(logoPath))
                             {
-                                SizeMode = PictureBoxSizeMode.Zoom,
-                                Size = new Size(80, 80),
-                                Image = Image.FromFile(logoPath),
-                                Margin = new Padding(10, 5, 10, 5),
-                                BackColor = Color.White
-                            };
+                                pictureBoxA = new PictureBox
+                                {
+                                    SizeMode = PictureBoxSizeMode.Zoom,
+                                    Size = new Size(80, 80),
+                                    Image = Image.FromFile(logoPath),
+                                    Margin = new Padding(10, 5, 10, 5),
+                                    BackColor = Color.White
+                                };
+                            }
                         }
 
                         // 启动按钮 - Windows 11风格

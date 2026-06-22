@@ -1,0 +1,88 @@
+name: .NET Desktop CI and Nightly
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * *' # 每日 UTC 00:00 触发
+  workflow_dispatch: {}
+
+jobs:
+  build-and-publish:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.nuget/packages
+            !**/node_modules
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore ./src/XAL/XAL.sln
+
+      - name: Build
+        run: dotnet build ./src/XAL/XAL.sln --configuration Release --no-restore
+
+      - name: Publish self-contained single-file EXE (win-x64)
+        env:
+          DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+        run: |
+          dotnet publish ./src/XAL/XAL.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:PublishTrimmed=false -o ${{ env.RUNNER_TEMP }}/publish
+
+      - name: Upload single-file EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: XAL-singlefile
+          path: ${{ env.RUNNER_TEMP }}/publish/*.exe
+
+      - name: Set build timestamp
+        id: date
+        shell: pwsh
+        run: |
+          $d = (Get-Date).ToUniversalTime().ToString('yyyyMMdd-HHmm')
+          echo "date=$d" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Push single-file EXE to nightly branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Prepare working tree
+          git fetch origin nightly --depth=1 || Write-Host 'no remote nightly'
+          if (git rev-parse --verify origin/nightly 2>$null) {
+            git checkout nightly
+            git reset --hard origin/nightly
+          } else {
+            git checkout --orphan nightly
+            git rm -rf .
+          }
+          $dest = "releases/nightly/${{ steps.date.outputs.date }}"
+          New-Item -ItemType Directory -Path $dest -Force | Out-Null
+          $exe = Get-ChildItem -Path $env:RUNNER_TEMP\publish -Filter '*.exe' -Recurse | Select-Object -First 1
+          if (-not $exe) { Write-Error 'No exe found in publish output'; exit 1 }
+          Copy-Item -Path $exe.FullName -Destination $dest -Force
+          git add -A
+          if (git diff --cached --quiet) {
+            Write-Host 'No changes to commit to nightly branch'
+          } else {
+            git commit -m "Nightly build ${{ steps.date.outputs.date }}"
+            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:nightly --force
+          }
