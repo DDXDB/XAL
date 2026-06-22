@@ -17,14 +17,17 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      - name: Publish single-file EXE (framework-dependent, win-x64) with compression and trimming
+      - name: Restore
+        run: dotnet restore ./src/XAL/XAL.sln
+
+      - name: Publish (framework-dependent, win-x64)
         env:
           DOTNET_CLI_TELEMETRY_OPTOUT: '1'
         run: |
-          dotnet publish ./src/XAL/XAL.csproj -c Release -r win-x64 /p:PublishSingleFile=true /p:EnableCompressionInSingleFile=true /p:PublishTrimmed=true /p:TrimMode=link /p:PublishReadyToRun=false -o ./publish
+          dotnet publish ./src/XAL/XAL.csproj -c Release -r win-x64 --self-contained false /p:PublishTrimmed=true /p:TrimMode=link -o ./publish
 
-      - name: Upload EXE
+      - name: Upload publish folder
         uses: actions/upload-artifact@v4
         with:
-          name: XAL-exe
-          path: ./publish/*.exe
+          name: XAL-publish
+          path: ./publish/**
